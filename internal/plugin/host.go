@@ -27,6 +27,7 @@ import (
 
 	"mygo-music/internal/i18n"
 	"mygo-music/internal/music"
+	"mygo-music/internal/netproxy"
 )
 
 // openURL opens a page in the listener's browser. The app sets it.
@@ -357,6 +358,12 @@ func (p *Plugin) spawn(v *vm) native {
 		}
 		cmd := exec.Command(command, cmdArgs...)
 		cmd.Dir = p.dir
+		// It reaches the web as the app does, ffmpeg and yt-dlp as well.
+		if env, err := netproxy.Environ(); err != nil {
+			log.Printf("plugin %s: %s won't go through the proxy: %v", p.manifest.ID, command, err)
+		} else if env != nil {
+			cmd.Env = env
+		}
 		hideConsole(cmd)
 		stderr := &tailWriter{to: logWriter{p.manifest.ID}}
 		cmd.Stderr = stderr

@@ -14,6 +14,7 @@ import (
 	"mygo-music/internal/i18n"
 	"mygo-music/internal/local"
 	"mygo-music/internal/music"
+	"mygo-music/internal/netproxy"
 	"mygo-music/internal/plugin"
 )
 
@@ -451,6 +452,8 @@ func (a *app) settingsSections(c *ui.Context, p palette) []settingsSection {
 		})
 	})
 
+	add("network", T("Network"), iconGlobe, func(row settingsRow, block settingsBlock) { a.proxySettings(c, row) })
+
 	if a.captionsShown() && a.anyCan("shows") {
 		add("podcasts", T("Podcasts"), iconPodcast, func(row settingsRow, block settingsBlock) { a.captionSettings(row, c) })
 	}
@@ -759,4 +762,52 @@ func (a *app) keepSetting(lib *library, key, value string) {
 			a.loadAccount(lib)
 		})
 	}()
+}
+
+// proxySettings are how the app reaches the web: through a proxy set by hand,
+// the environment's, or none.
+func (a *app) proxySettings(c *ui.Context, row settingsRow) {
+	s := &a.settings
+	row(T("Proxy"), T("How songs, covers, lyrics, plugins and their sign-in pages reach the web, from the next request on"), func() {
+		labels := make([]string, len(proxyModes))
+		at := 0
+		for i, m := range proxyModes {
+			labels[i] = m.label
+			if m.mode == s.ProxyMode {
+				at = i
+			}
+		}
+		if i, ok := choice(c, "proxy-mode", T("Proxy"), labels, at); ok {
+			s.ProxyMode = proxyModes[i].mode
+			a.proxyErr = s.applyProxy() != nil && s.Proxy != ""
+			a.changed()
+		}
+	})
+	if s.ProxyMode != netproxy.Manual {
+		return
+	}
+	desc := T("http://, https://, socks5:// or socks5h://, such as http://127.0.0.1:7890. Addresses on this computer go direct.")
+	if a.proxyErr {
+		desc = T("That isn't a proxy address: it should be like http://127.0.0.1:7890 or socks5://127.0.0.1:1080")
+	}
+	row(T("Proxy Server"), desc, func() {
+		if a.proxyText == nil {
+			v := s.Proxy
+			a.proxyText = &v
+		}
+		in := ui.TextInput(c.Key("proxy"), a.proxyText).Label(T("Proxy Server")).Placeholder("http://127.0.0.1:7890").FontSize(13).Width(240)
+		if in.Submitted() || !in.Focused() && strings.TrimSpace(*a.proxyText) != s.Proxy {
+			a.keepProxy(strings.TrimSpace(*a.proxyText))
+		}
+	})
+}
+
+// keepProxy sends the app's requests through the proxy typed, if it is one,
+// and keeps it either way, to fix.
+func (a *app) keepProxy(text string) {
+	s := &a.settings
+	s.Proxy = text
+	*a.proxyText = text
+	a.proxyErr = s.applyProxy() != nil && s.Proxy != ""
+	a.changed()
 }

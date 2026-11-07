@@ -45,9 +45,10 @@ func (a *app) webSignIn(o plugin.WebSignIn) (string, error) {
 			over = w
 		}
 	}
+	beforeSignInPage()
+	// Made with no page, which loads once it goes through the proxy chosen.
 	win := mygo.NewWindow(mygo.WindowOptions{
 		Title:     Tf("Sign in to %s", o.Name),
-		URL:       o.URL,
 		Width:     480,
 		Height:    680,
 		MinWidth:  360,
@@ -57,6 +58,11 @@ func (a *app) webSignIn(o plugin.WebSignIn) (string, error) {
 	})
 	closed := make(chan struct{})
 	win.OnClosed(func() { close(closed) })
+	proxySignInPage(win)
+	if err := win.Page().LoadURL(o.URL); err != nil {
+		win.Close()
+		return "", err
+	}
 	a.post(func() {
 		if a.signInPages == nil {
 			a.signInPages = map[string]*mygo.Window{}
