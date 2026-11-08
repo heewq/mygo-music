@@ -9,6 +9,7 @@ import (
 	"github.com/egoist/mygo"
 
 	"mygo-music/internal/i18n"
+	"mygo-music/internal/netproxy"
 )
 
 // settings are the listener's choices, kept in settings.json in the user
@@ -81,6 +82,12 @@ type settings struct {
 	// CacheMB is how many megabytes the songs kept on disk may take; 0
 	// keeps none.
 	CacheMB int `json:"cacheMB"`
+	// ProxyMode is how the app reaches the web (proxyModes): through the
+	// proxy the system's settings name, straight out, or through Proxy.
+	ProxyMode string `json:"proxyMode,omitempty"`
+	// Proxy is the proxy set by hand, such as http://127.0.0.1:7890 or
+	// socks5://127.0.0.1:1080.
+	Proxy string `json:"proxy,omitempty"`
 	// SearchHistory keeps submitted keywords, most recent first.
 	SearchHistory []string `json:"searchHistory,omitempty"`
 
@@ -142,6 +149,19 @@ func (s settings) applyAppearance() {
 	if src != mygo.Theme.Source() {
 		mygo.Theme.SetSource(src)
 	}
+}
+
+// applyProxy has the app's requests go out as the settings say. A proxy set
+// by hand that doesn't parse leaves them going as before, and says why.
+func (s settings) applyProxy() error {
+	return netproxy.Set(s.ProxyMode, s.Proxy)
+}
+
+// proxyModes are the ways to reach the web.
+var proxyModes = []struct{ mode, label string }{
+	{netproxy.System, N("Follow System")},
+	{netproxy.Direct, N("No Proxy")},
+	{netproxy.Manual, N("Manual")},
 }
 
 // qualityLevels are what can be asked of sources, by what they sound like.

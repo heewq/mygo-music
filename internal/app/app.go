@@ -110,8 +110,10 @@ type app struct {
 	query     string
 	searchBox ui.Handle
 
-	settingsPage      string // the settings' page that shows
-	settingsQuery     string // what's searched for in the settings
+	settingsPage      string  // the settings' page that shows
+	settingsQuery     string  // what's searched for in the settings
+	proxyText         *string // the proxy as being typed, nil until then
+	proxyErr          bool    // whether the proxy typed doesn't parse
 	settingsSearchBox ui.Handle
 	settingsUnderTop  bool // the settings' page has scrolled under its top edge
 
@@ -332,7 +334,11 @@ func Run() error {
 		queueAt:     -1,
 		cacheUsed:   -1,
 	}
-	a.useUpdater(i18n.Resolve(loadSettings().Language, systemLanguages()))
+	// Before anything reaches the web, the updater and plugins included. A
+	// proxy that doesn't parse leaves the system's.
+	early := loadSettings()
+	early.applyProxy()
+	a.useUpdater(i18n.Resolve(early.Language, systemLanguages()))
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
 		a.settings.applyAppearance()
