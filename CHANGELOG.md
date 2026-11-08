@@ -2,6 +2,15 @@
 
 All notable changes to MyGo Music are written down here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.1.23] - 2026-11-08
+
+This version is built from the fork heewq/mygo-music and updates from its releases. Its macOS app is signed ad hoc and not notarized: after downloading it, run `xattr -cr "/Applications/MyGo Music.app"` before opening it.
+
+### Added
+
+- Settings has a Network page: follow the system's proxy, go direct, or go through a proxy set by hand (http, https, socks5 or socks5h, with a password or not). It applies from the next request, without a restart, and this computer's addresses always go direct. The app's own requests, the updater, plugins' sign-in pages and the programs plugins start, such as ffmpeg and yt-dlp, all go the chosen way.
+- Plugins can write a file in a folder of their data that only you can read, with `host.writeDataFile`, for a program they start that reads something only from a file. The YouTube Music plugin uses it to give yt-dlp your session, so tracks you uploaded to YouTube Music play.
+
 ## [0.1.22] - 2026-11-07
 
 ### Fixed
@@ -219,6 +228,7 @@ All notable changes to MyGo Music are written down here. Versions follow [Semant
 
 The first release: a native music player that plays your local files and gets everything else from plugins.
 
+[0.1.23]: https://github.com/heewq/mygo-music/compare/v0.1.22...v0.1.23
 [0.1.22]: https://github.com/egoist/mygo-music/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/egoist/mygo-music/compare/v0.1.20...v0.1.21
 [0.1.20]: https://github.com/egoist/mygo-music/compare/v0.1.19...v0.1.20

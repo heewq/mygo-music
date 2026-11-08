@@ -5,7 +5,7 @@ export default ({ command }: { command: string }) => ({
   name: "MyGo Music",
   identifier: "dev.egoist.music",
   slug: "mygo-music",
-  version: "0.1.22",
+  version: "0.1.23",
   out: "build",
   urlSchemes: [command === "dev" ? "mygo-music-dev" : "mygo-music"],
   updates: {
