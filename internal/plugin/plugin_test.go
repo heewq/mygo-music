@@ -561,6 +561,42 @@ export function suggest({ query }) { host.removeDataDir(query); return []; }`)
 	}
 }
 
+// A plugin can write a file in a folder of its data for a program to read, but
+// not over what the app keeps at the top of it, such as what it has granted.
+func TestWriteDataFile(t *testing.T) {
+	p := load(t, plain, `
+export function suggest({ query }) { return [host.writeDataFile(query, "secret")]; }`)
+	granted := filepath.Join(p.data, "granted.json")
+	if _, err := p.Suggest("x/start"); err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(granted, []byte("{}"), 0o600)
+
+	for _, bad := range []string{"granted.json", "x/../granted.json", "../other/file", "/etc/file", "", "."} {
+		if _, err := p.Suggest(bad); err == nil {
+			t.Errorf("wrote %q", bad)
+		}
+	}
+	if b, _ := os.ReadFile(granted); string(b) != "{}" {
+		t.Errorf("the grants were written over: %q", b)
+	}
+
+	got, err := p.Suggest("yt-dlp/cookies.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(p.data, "yt-dlp", "cookies.txt")
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("answered %q, want the path %s", got, want)
+	}
+	if b, _ := os.ReadFile(want); string(b) != "secret" {
+		t.Errorf("wrote %q", b)
+	}
+	if info, err := os.Stat(want); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
+		t.Errorf("others can read it: %v %v", info.Mode(), err)
+	}
+}
+
 // A program that stops says why, for the plugin to tell the listener rather than
 // leave them waiting.
 func TestProgramSaysWhyItStopped(t *testing.T) {

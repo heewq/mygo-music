@@ -153,6 +153,7 @@ A plugin has the JavaScript standard library, timers, `fetch` and its relatives,
 | `host.setting(key)` | what the listener filled in |
 | `host.t(text)`, `host.language()` | the text in the listener's language, from the plugin's `locales`, and that language: `en` or `zh-CN` |
 | `host.removeDataDir(name)` | removes a folder inside `host.dataDir` |
+| `host.writeDataFile(name, text)` | writes a file in a folder inside `host.dataDir`, such as `cache/list.txt`, that only the listener can read, and answers its path: for a program the plugin starts that reads something only from a file |
 | `host.crypto.md5(text)` | its hash, in hex |
 | `host.crypto.aesEcbEncrypt(key, text)` | AES-ECB with PKCS#7 padding, in hex, for services whose requests are made that way |
 | `host.openURL(url)` | opens a web page in the listener's browser |

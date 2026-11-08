@@ -151,6 +151,15 @@ func (p *Plugin) installHost(v *vm) error {
 			}
 			return moejs.Undefined(), os.RemoveAll(filepath.Join(p.data, name))
 		}),
+		// writeDataFile is for a program the plugin starts that reads something
+		// only from a file, such as yt-dlp its cookies.
+		"writeDataFile": moejs.NativeFunc(func(_ *moejs.Realm, _ moejs.Value, args []moejs.Value) (moejs.Value, error) {
+			path, err := p.writeDataFile(moejs.Arg(args, 0).String(), moejs.Arg(args, 1).String())
+			if err != nil {
+				return moejs.Undefined(), err
+			}
+			return moejs.String(path), nil
+		}),
 		"waitForRedirect": moejs.NativeFunc(p.waitForRedirect(v)),
 		"webSignIn":       moejs.NativeFunc(p.webSignIn(v)),
 		"spawn":           moejs.NativeFunc(p.spawn(v)),
@@ -499,4 +508,26 @@ type logWriter struct{ id string }
 func (w logWriter) Write(b []byte) (int, error) {
 	log.Printf("plugin %s: %s", w.id, strings.TrimRight(string(b), "\n"))
 	return len(b), nil
+}
+
+// writeDataFile writes text to name, in a folder of the plugin's data, which
+// only the listener can read, and answers its path. Not at the top of its data,
+// where the app keeps what it has granted the plugin.
+func (p *Plugin) writeDataFile(name, text string) (string, error) {
+	if !filepath.IsLocal(name) || filepath.Dir(filepath.Clean(name)) == "." {
+		return "", fmt.Errorf("not a file in a folder of the plugin's data: %s", name)
+	}
+	path := filepath.Join(p.data, name)
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return "", err
+	}
+	// Replaced whole, so that a program reading it never sees half of it.
+	if err := os.WriteFile(path+".part", []byte(text), 0o600); err != nil {
+		return "", err
+	}
+	if err := os.Rename(path+".part", path); err != nil {
+		os.Remove(path + ".part")
+		return "", err
+	}
+	return path, nil
 }
