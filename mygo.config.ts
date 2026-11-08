@@ -9,8 +9,8 @@ export default ({ command }: { command: string }) => ({
   out: "build",
   urlSchemes: [command === "dev" ? "mygo-music-dev" : "mygo-music"],
   updates: {
-    publicKey: "WzJsOGNIuf6mcEqo5ff8jub+NoQQOEk4JXreLPYjgyQ=",
-    github: "egoist/mygo-music",
+    publicKey: "F+LhPRwtqpNg52RDPzvZLwXUFOCAH8/s27xkxgvSEuw=",
+    github: "heewq/mygo-music",
   },
   macos: {
     icon: "icon/AppIcon.icon",

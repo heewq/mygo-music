@@ -66,6 +66,10 @@ jobs:
     needs: draft-release
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      # A fork without the Developer ID certificate signs the macOS app ad
+      # hoc and doesn't notarize it.
+      HAS_MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -107,7 +111,7 @@ jobs:
       # mygo.config.ts, notarizes its disk image. Both go in a keychain of the
       # job, made the default one, where codesign and notarytool look.
       - name: Import the certificate and the notary credentials
-        if: matrix.name == 'macOS'
+        if: matrix.name == 'macOS' && env.HAS_MACOS_CERTIFICATE == 'true'
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -133,4 +137,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
-        run: go tool mygo build -platform "${{ matrix.platform }}" -upload
+        run: |
+          flags=()
+          if [ "${{ matrix.name }}" = macOS ] && [ "$HAS_MACOS_CERTIFICATE" != true ]; then
+            flags=(-sign - -skip-notarize)
+          fi
+          go tool mygo build -platform "${{ matrix.platform }}" "${flags[@]}" -upload
